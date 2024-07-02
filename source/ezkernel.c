@@ -1875,6 +1875,33 @@ u32 Copy_file(const char* src, const char* dst)
 void Backup_savefile(const char* filename)
 {
 	const char* backup_dir = "/BACKUP/SAVER";
+	char timestamp[20];
+	char backup_filename[MAX_path_len];
+	u8 datetime[7];
+
+	//get time
+	rtc_enable();
+	rtc_get(datetime);
+	rtc_disenable();
+
+	u8 hour = UNBCD(datetime[4]&0x3F);
+	u8 minute = UNBCD(datetime[5]&0x7F);
+	u8 second = UNBCD(datetime[6]&0x7F);
+	if(hour >23)hour=0;
+	if(minute >59)minute=0;
+	if(second >59)second=0;
+
+	u16 year = UNBCD(datetime[0])+2000;
+	u8 month = UNBCD(datetime[1]&0x1F);
+	u8 day = UNBCD(datetime[2]&0x3F);
+
+	// Debug
+	// Clear(0, 0, 240, 160, 0x0000, 1);
+	// char msgtime[128];
+	// sprintf(msgtime,"%u/%02u/%02u %02d:%02d:%02d", year, month, day, hour, minute, second);
+	// DrawHZText12(msgtime, 0,0, 60, gl_color_text,1);
+	// wait_btn();
+
 	u8 temp_filename[MAX_path_len] = { 0 };
 	u8 temp_filename_dst[MAX_path_len] = { 0 };
 	u32 temp_filename_length;
@@ -1900,6 +1927,26 @@ void Backup_savefile(const char* filename)
 
 	temp_filename[temp_filename_length] = '0';
 	Copy_file(filename, temp_filename);
+
+	// create date-named backup
+	u8 temp_filename_date[MAX_path_len] = { 0 };
+
+	strncpy(temp_filename_date, backup_dir, sizeof(temp_filename_date) - 2);
+	temp_filename_length = strlen(temp_filename_date);
+	temp_filename_date[temp_filename_length++] = '/';
+
+	strncpy(temp_filename_date + temp_filename_length, filename, sizeof(temp_filename_date) - temp_filename_length - 2);
+	temp_filename_length = strlen(temp_filename_date);
+
+	sprintf(timestamp, "_%u-%02u-%02u_%02d-%02d-%02d", year, month, day, hour, minute, second);
+	strncpy(temp_filename_date + temp_filename_length, timestamp, sizeof(temp_filename_date) - temp_filename_length - 2);
+	temp_filename_length = strlen(temp_filename_date);
+
+	// sprintf(msgtime,"%s", temp_filename_date);
+	// DrawHZText12(msgtime, 0,0, 80, gl_color_text,1);
+	// wait_btn();
+
+	Copy_file(filename, temp_filename_date);
 }
 //---------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------
